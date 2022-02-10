@@ -251,7 +251,9 @@ class MultipatchDecoder(FNDiffGeomPropsBase):
 
         # Loss total area.
         A_gt = kwargs['areas'] * self._alphas_si['total_area_mult']
-        L_Atot = torch.max(self._zero, A.mean(dim=2).sum(dim=1) - A_gt). \
+        # MODIFIED: Multiplication by chart UV space area of 4
+        CHART_UV_SPACE_AREA = 4
+        L_Atot = torch.max(self._zero, (CHART_UV_SPACE_AREA * A.mean(dim=2)).sum(dim=1) - A_gt). \
                      pow(2).mean() * self._alphas_si['total_area']
 
         return {'L_skew': L_F, 'L_E': L_E, 'L_G': L_G,
@@ -311,7 +313,8 @@ class AtlasNetReimpl(MultipatchDecoder):
         self._code = code
 
         self.enc = ANEncoderPN(code, normalize_cw=normalize_cw, gpu=gpu)
-        self.sampler = FNSamplerRandUniform((0., 1.), (0., 1.), M, gpu=gpu)
+        # MODIFIED: UV sample range
+        self.sampler = FNSamplerRandUniform((-1., 1.), (-1., 1.), M, gpu=gpu)
         self.dec = DecoderMultiPatch(
             num_patches, DecoderAtlasNet, code=code, sample_dim=2,
             batch_norm=dec_batch_norm, activ_fns=dec_activ_fns,
