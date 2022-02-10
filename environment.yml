@@ -1,0 +1,16 @@
+name: dsp
+channels:
+  - pytorch
+  - pytorch3d
+  - conda-forge
+  - defaults
+dependencies:
+  - cudatoolkit=10.1
+  - setuptools=59.5.0
+  - python=3.8
+  - pip=21.3.1
+  - easydict=1.9
+  - pytorch=1.6.0
+  - torchvision=0.7.0
+  - pytorch-lightning=1.4.9
+  - pytorch3d=0.6.1
