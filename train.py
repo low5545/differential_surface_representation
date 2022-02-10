@@ -24,6 +24,12 @@ import numpy as np
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+# neural atlas
+import easydict
+import yaml
+import pytorch_lightning as pl
+import neural_atlas as neat
+
 # Settings.
 print_loss_tr_every = 50
 save_collapsed_every = 50
@@ -31,6 +37,9 @@ gpu = torch.cuda.is_available()
 
 # Parse arguments.
 parser = argparse.ArgumentParser()
+parser.add_argument(
+    "neat_config", type=str, help='Path to the neural atlas config file.'
+)
 parser.add_argument('--conf', help='Path to the main config file of the model.',
                     default='config.yaml')
 parser.add_argument('--output', help='Path to the output directory for storing '
@@ -40,6 +49,15 @@ args = parser.parse_args()
 
 # Load the config file, prepare paths.
 conf = helpers.load_conf(args.conf)
+
+# load the neural atlas config from the config file
+with open(args.neat_config) as f:
+    neat_config = easydict.EasyDict(yaml.full_load(f))
+
+# set configs from the neural atlas config
+assert neat_config.data.train_eff_batch_size \
+       == neat_config.data.val_eff_batch_size
+conf['batch_size'] = neat_config.data.train_eff_batch_size
 
 # Prepare TB writers.
 writer_tr = SummaryWriter(helpers.jn(args.output, 'tr'))
@@ -58,21 +76,27 @@ model = AtlasNetReimpl(
     alpha_scaled_isometry=conf['alpha_scaled_isometry'],
     alphas_sciso=conf['alphas_sciso'], gpu=gpu)
 
-# Create data loaders.
-ds_tr = ShapeNet(
-    conf['path_root_imgs'], conf['path_root_pclouds'],
-    conf['path_category_file'], class_choice=conf['tr_classes'], train=True,
-    npoints=conf['N'], load_area=True)
-ds_va = ShapeNet(
-    conf['path_root_imgs'], conf['path_root_pclouds'],
-    conf['path_category_file'], class_choice=conf['va_classes'], train=False,
-    npoints=conf['N'], load_area=True)
-dl_tr = DataLoaderDevice(DataLoader(
-    ds_tr, batch_size=conf['batch_size'], shuffle=True, num_workers=4,
-    drop_last=True), gpu=gpu)
-dl_va = DataLoaderDevice(DataLoader(
-    ds_va, batch_size=conf['batch_size'], shuffle=True, num_workers=2,
-    drop_last=True), gpu=gpu)
+# seed all pseudo-random generators
+neat_config.seed = pl.seed_everything(neat_config.seed, workers=True)
+
+# instantiate the neural atlas data module
+datamodule = neat.data.datamodule.DataModule(
+    neat_config.seed,
+    neat_config.input,
+    neat_config.target,
+    num_nodes=1,
+    gpus=[ 0 ],
+    **neat_config.data
+)
+datamodule.setup(stage="fit")
+
+ds_tr = datamodule.train_dataset
+ds_va = datamodule.val_dataset
+dl_tr = datamodule.train_dataloader()['dataset']
+dl_va = datamodule.val_dataloader().loaders['dataset']
+
+# define the device
+device = helpers.Device(gpu=gpu).device
 
 print('Train ds: {} samples'.format(len(ds_tr)))
 print('Valid ds: {} samples'.format(len(ds_va)))
@@ -100,9 +124,11 @@ for ep in range(1, conf['epochs'] + 1):
     tstart = timer()
     model.train()
     for bi, batch in enumerate(dl_tr, start=1):
+        batch = easydict.EasyDict(batch)
+
         it = (ep - 1) * iters_tr + bi
-        model(batch['pcloud'], it=it)
-        losses = model.loss(batch['pcloud'], areas_gt=batch['area'])
+        model(batch.input.pcl.to(device), it=it)
+        losses = model.loss(batch.target.pcl.to(device), areas_gt=batch.target.area.to(device))
 
         opt.zero_grad()
         losses['loss_tot'].backward()
@@ -135,9 +161,11 @@ for ep in range(1, conf['epochs'] + 1):
     it = ep * iters_tr
     loss_va_run = 0.
     for bi, batch in enumerate(dl_va):
-        curr_bs = batch['pcloud'].shape[0]
-        model(batch['pcloud'])
-        lv = model.loss(batch['pcloud'], areas_gt=batch['area'])['loss_tot']
+        batch = easydict.EasyDict(batch)
+
+        curr_bs = batch.input.pcl.shape[0]
+        model(batch.input.pcl.to(device))
+        lv = model.loss(batch.target.pcl.to(device), areas_gt=batch.target.area.to(device))['loss_tot']
         loss_va_run += lv.item() * curr_bs
 
         # Save number of collapsed patches.
