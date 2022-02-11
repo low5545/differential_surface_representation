@@ -12,6 +12,7 @@ Author: Jan Bednarik, jan.bednarik@epfl.ch
 # 3rd party
 import torch
 import torch.nn as nn
+import pytorch3d.loss
 
 # Project files.
 from helpers import Device
@@ -49,8 +50,6 @@ class FNDiffGeomPropsBase(FoldingNetBase, Device):
         FoldingNetBase.__init__(self)
         Device.__init__(self, gpu=gpu)
 
-        self._reg_func_impl = self.register_dist_based
-
         # Diff. geom. props object.
         self.dgp = DiffGeomProps(
             normals=True, curv_mean=False, curv_gauss=False, fff=fff)
@@ -65,75 +64,6 @@ class FNDiffGeomPropsBase(FoldingNetBase, Device):
     def forward(self, *args, **kwargs):
         raise NotImplementedError
 
-    @staticmethod
-    def distance_matrix(pc_N, pc_M):
-        """ Computes a distance matrix between two pclouds.
-
-        Args:
-            pc_N (torch.Tensor): GT pcloud, shape (B, N, 3)
-            pc_M (torch.Tensor): Predicted pcloud, shape (B, M, 3)
-
-        Returns:
-            Distance matrix, shape (B, M, N).
-        """
-        # Get per-point distance matrix.
-        B, M, D = pc_M.shape
-        B2, N, D2 = pc_N.shape
-
-        assert (B == B2)
-        assert (D == D2)
-        assert (D == 3)
-
-        x = pc_M.reshape((B, M, 1, D))
-        y = pc_N.reshape((B, 1, N, D))
-
-        return (x - y).pow(2).sum(dim=3).sqrt()  # (B, M, N, 3) -> (B, M, N)
-
-    @staticmethod
-    def register_dist_based(pc_gt, pc_p, *args):
-        """
-
-        Args:
-            pc_gt:
-            pc_p:
-
-        Returns:
-
-        """
-        distm = FNDiffGeomPropsBase.distance_matrix(pc_gt, pc_p)  # (B, M, N)
-        inds_p2gt = distm.argmin(dim=2)  # (B, M)
-        inds_gt2p = distm.argmin(dim=1)  # (B, N)
-        return inds_p2gt, inds_gt2p
-
-    @staticmethod
-    def echd(pc_gt, pc_p, inds_p2gt, inds_gt2p):
-        """ Extended Chamfer distance.
-
-        Args:
-            pc_gt: (B, N, 3)
-            pc_p: (B, M, 3)
-            inds_p2gt: (B, M)
-            inds_gt2p: (B, N)
-
-        Returns:
-
-        """
-        # Reshape inds.
-        inds_p2gt = inds_p2gt.unsqueeze(2).expand(-1, -1, 3)
-        inds_gt2p = inds_gt2p.unsqueeze(2).expand(-1, -1, 3)
-
-        # Get registered points.
-        pc_gt_reg = pc_gt.gather(1, inds_p2gt)  # (B, M, 3)
-        pc_p_reg = pc_p.gather(1, inds_gt2p)  # (B, N, 3)
-
-        # Compute per-point-pair squared L2 distances.
-        d_p2gt = (pc_p - pc_gt_reg).pow(2).sum(dim=2)  # (B, M)
-        d_gt2p = (pc_gt - pc_p_reg).pow(2).sum(dim=2)  # (B, N)
-
-        # Compute scalar loss.
-        chd = d_p2gt.mean() + d_gt2p.mean()
-        return chd
-
     def loss(self, pc_gt):
         """ Loss functions computing extended chamfer distance (eCHD).
 
@@ -147,11 +77,9 @@ class FNDiffGeomPropsBase(FoldingNetBase, Device):
         """
         losses = {}
 
-        # Get registration.
-        inds_p2gt, inds_gt2p = self._reg_func_impl(pc_gt, self.pc_pred)
-
         # Get echd loss.
-        loss_chd = self.echd(pc_gt, self.pc_pred, inds_p2gt, inds_gt2p)
+        # MODIFIED: More time & memory efficient implementation of Chamfer dist
+        loss_chd, _ = pytorch3d.loss.chamfer_distance(pc_gt, self.pc_pred)
         losses['loss_chd'] = loss_chd
 
         # Total loss.
