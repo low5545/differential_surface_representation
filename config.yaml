@@ -32,19 +32,16 @@ alphas_sciso:
   G: 1.
   skew: 1.
   stretch: 0.
-  total_area: 100
+  total_area: 0
   total_area_mult: 1.
 
 # Training
-epochs: 1000
+epochs: 150
 lr: 0.001
 
 # lr scheduler
-reduce_lr_on_plateau: True
-lr_factor: 0.3
-lr_patience: 30
-lr_min: 0.000001
-lr_threshold: 0.0001
+milestones: [ 120, 140, 145 ]
+gamma: 0.1
 
 # Savers
 train_state_save_period: 1

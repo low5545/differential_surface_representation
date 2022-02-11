@@ -32,10 +32,10 @@ data:
   pcl_normalization_mode: ball    # [H] { ball, cube }
   pcl_normalization_scale: 1.0    # [H] affects activation function of conditional homeomorphism
 
-  train_eff_batch_size: 9         # [H] multiple of total number of gpus across all nodes
-  val_eff_batch_size: 9           #     multiple of total number of gpus across all nodes
-  test_eff_batch_size: 9          #     multiple of total number of gpus across all nodes
-  num_workers_per_node: 5         #     multiple of number of gpus per node
+  train_eff_batch_size: 32        # [H] multiple of total number of gpus across all nodes
+  val_eff_batch_size: 32          #     multiple of total number of gpus across all nodes
+  test_eff_batch_size: 32         #     multiple of total number of gpus across all nodes
+  num_workers_per_node: 16        #     multiple of number of gpus per node
 
   # input-dependent configs
   input_pcl:

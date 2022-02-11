@@ -32,6 +32,7 @@ import neural_atlas as neat
 
 # Settings.
 print_loss_tr_every = 50
+print_loss_val_every = 10
 save_collapsed_every = 50
 gpu = torch.cuda.is_available()
 
@@ -103,11 +104,9 @@ print('Valid ds: {} samples'.format(len(ds_va)))
 
 # Prepare training.
 opt = torch.optim.Adam(model.parameters(), lr=conf['lr'])
-scheduler = None
-if conf['reduce_lr_on_plateau']:
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        opt, factor=conf['lr_factor'], patience=conf['lr_patience'],
-        min_lr=conf['lr_min'], threshold=conf['lr_threshold'], verbose=True)
+scheduler = torch.optim.lr_scheduler.MultiStepLR(
+    opt, milestones=conf['milestones'], gamma=conf['gamma']
+)
 
 # Prepare savers.
 saver = helpers.TrainStateSaver(
@@ -157,32 +156,32 @@ for ep in range(1, conf['epochs'] + 1):
                                  global_step=it)
 
     # Validation.
-    model.eval()
-    it = ep * iters_tr
-    loss_va_run = 0.
-    for bi, batch in enumerate(dl_va):
-        batch = easydict.EasyDict(batch)
+    if ep % print_loss_val_every == 0:
+        model.eval()
+        it = ep * iters_tr
+        loss_va_run = 0.
+        for bi, batch in enumerate(dl_va):
+            batch = easydict.EasyDict(batch)
 
-        curr_bs = batch.input.pcl.shape[0]
-        model(batch.input.pcl.to(device))
-        lv = model.loss(batch.target.pcl.to(device), areas_gt=batch.target.area.to(device))['loss_tot']
-        loss_va_run += lv.item() * curr_bs
+            curr_bs = batch.input.pcl.shape[0]
+            model(batch.input.pcl.to(device))
+            lv = model.loss(batch.target.pcl.to(device), areas_gt=batch.target.area.to(device))['loss_tot']
+            loss_va_run += lv.item() * curr_bs
 
-        # Save number of collapsed patches.
-        if bi == 1 and 'fff' in model.geom_props:
-            num_collpased = np.sum(
-                [inds.shape[0] for inds in model.collapsed_patches_A()]) / \
-                            model.pc_pred.shape[0]
-            writer_va.add_scalar('collapsed_patches', num_collpased,
-                                 global_step=it)
+            # Save number of collapsed patches.
+            if bi == 1 and 'fff' in model.geom_props:
+                num_collpased = np.sum(
+                    [inds.shape[0] for inds in model.collapsed_patches_A()]) / \
+                                model.pc_pred.shape[0]
+                writer_va.add_scalar('collapsed_patches', num_collpased,
+                                    global_step=it)
 
-    loss_va = loss_va_run / len(ds_va)
-    writer_va.add_scalar('loss_tot', loss_va, it)
-    print(' ltot_va: {:.4f}'.format(loss_va))
+        loss_va = loss_va_run / len(ds_va)
+        writer_va.add_scalar('loss_tot', loss_va, it)
+        print(' ltot_va: {:.4f}'.format(loss_va))
 
     # LR scheduler.
-    if conf['reduce_lr_on_plateau']:
-        scheduler.step(loss_va)
+    scheduler.step()
 
     # Save train state.
     saver(epoch=ep, iterations=it)
