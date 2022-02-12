@@ -60,3 +60,14 @@ data:
     hue_jitter_factor: 0.0        # [H] [ 0.0, 0.5 ]
     random_hflip: false           # [H] affects camera parameters and target point cloud
     random_vflip: false           # [H] affects camera parameters and target point cloud
+
+metric:
+  default_chamfer_dist: 10.0      # [H]
+  default_normal: 10.0            # [H]
+  default_f_score: 0.0            # [H]
+  default_distortion: 100.0       # [H]
+  default_stitching_err: 10.0     # [H]
+  f_score_scale_ratio: 0.02       # [H] [0.0, 2.0]
+  distortion_eps: 1.0e-4          # [H]
+  degen_chart_area_ratio: 0.01    # [H]
+  overlap_scale_ratio: 0.04       # [H] [0.0, 2.0]
