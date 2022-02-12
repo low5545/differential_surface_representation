@@ -7,7 +7,6 @@
 #
 
 ### Model
-N: 2500
 M: 5000   # train_uv_sample_size
 code: 1024
 

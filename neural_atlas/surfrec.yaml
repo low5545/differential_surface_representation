@@ -18,7 +18,7 @@ data:
                                   #       [0.0, 1.0] (fraction of test dataset) }
   overfit: false                  #     If true, validation & test datasets will be replaced
                                   #     with train dataset (including transforms) 
-  train_dataset_perm_seed:       #     { <empty> (set to seed above), <int> }
+  train_dataset_perm_seed:        #     { <empty> (set to seed above), <int> }
   eval_dataset_perm_seed: 3       #     { <empty> (no permutation), <int> }
 
   uv_space_scale: 1.0             # [H] affects activation function of conditional homeomorphism
