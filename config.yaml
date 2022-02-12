@@ -11,6 +11,12 @@ N: 2500
 M: 5000   # train_uv_sample_size
 code: 1024
 
+# load
+checkpoint_filepath:
+load_encoder: False
+load_decoder: False
+freeze_decoder: False
+
 # Encoder
 enc_freeze: False
 enc_weights: # Path, only needed if `enc_freeze`=True.

@@ -21,7 +21,10 @@ from decoder import DecoderMultiPatch, DecoderAtlasNet
 from sampler import FNSamplerRandUniform
 from diff_props import DiffGeomProps
 
+# neat
 from neural_atlas.models import encoders
+from neural_atlas.utils import modules
+
 
 class FoldingNetBase(nn.Module):
     def __init__(self):
@@ -264,6 +267,29 @@ class AtlasNetReimpl(MultipatchDecoder):
         # Freeze encoder.
         if freeze_encoder:
             self._freeze_encoder(freeze=True)
+
+        # MODIFIED: Support encoder & decoder weights loading & freezing
+        if kwargs['load_encoder']:
+            checkpoint = torch.load(
+                kwargs['checkpoint_filepath'], map_location=torch.device('cpu')
+            )
+            self.enc.load_state_dict(
+                modules.extract_descendent_state_dict(
+                    checkpoint["weights"], "enc"
+                )
+            )
+        if kwargs['load_decoder']:
+            checkpoint = torch.load(
+                kwargs['checkpoint_filepath'], map_location=torch.device('cpu')
+            )
+            self.dec.load_state_dict(
+                modules.extract_descendent_state_dict(
+                    checkpoint["weights"], "dec"
+                )
+            )
+        if kwargs['freeze_decoder']:
+            assert kwargs['load_decoder']
+            modules.freeze(self.dec)
 
     def forward(self, x, **kwargs):
         B = x.shape[0]  # Batch size.

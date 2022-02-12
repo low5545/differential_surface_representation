@@ -79,6 +79,10 @@ model = AtlasNetReimpl(
     alphas_sciso=conf['alphas_sciso'],
     gpu=gpu,
     svr=svr,
+    checkpoint_filepath=conf['checkpoint_filepath'],
+    load_encoder=conf['load_encoder'],
+    load_decoder=conf['load_decoder'],
+    freeze_decoder=conf['freeze_decoder']
 )
 
 # seed all pseudo-random generators

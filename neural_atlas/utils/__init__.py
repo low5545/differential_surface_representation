@@ -1,1 +1,1 @@
-from . import dataset_mixins, transforms
+from . import dataset_mixins, modules, transforms
