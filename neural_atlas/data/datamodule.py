@@ -666,7 +666,7 @@ class DataModule(pl.LightningDataModule):
             dataset=self.test_dataset,
             batch_size=self.test_batch_size,
             num_workers=self.num_workers,
-            shuffle=True,
+            shuffle=False,
             pin_memory=True,
             drop_last=False,
             # persistent_workers=True   # MODIFIED: not supported in PyTorch 1.6
