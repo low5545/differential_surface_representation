@@ -21,6 +21,7 @@ from decoder import DecoderMultiPatch, DecoderAtlasNet
 from sampler import FNSamplerRandUniform
 from diff_props import DiffGeomProps
 
+from neural_atlas.models import encoders
 
 class FoldingNetBase(nn.Module):
     def __init__(self):
@@ -240,7 +241,13 @@ class AtlasNetReimpl(MultipatchDecoder):
 
         self._code = code
 
-        self.enc = ANEncoderPN(code, normalize_cw=normalize_cw, gpu=gpu)
+        # MODIFIED: Support ResNet18 image encoder
+        if kwargs['svr']:
+            self.enc = encoders.ResNet18(latent_dims=code, pretrained=False)
+            self.enc.to(Device(gpu=gpu).device)
+        else:
+            self.enc = ANEncoderPN(code, normalize_cw=normalize_cw, gpu=gpu)
+
         # MODIFIED: UV sample range
         self.sampler = FNSamplerRandUniform((-1., 1.), (-1., 1.), M, gpu=gpu)
         self.dec = DecoderMultiPatch(

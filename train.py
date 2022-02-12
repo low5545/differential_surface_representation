@@ -59,6 +59,7 @@ with open(args.neat_config) as f:
 assert neat_config.data.train_eff_batch_size \
        == neat_config.data.val_eff_batch_size
 conf['batch_size'] = neat_config.data.train_eff_batch_size
+svr = ("img" in neat_config.input)
 
 # Prepare TB writers.
 writer_tr = SummaryWriter(helpers.jn(args.output, 'tr'))
@@ -75,7 +76,10 @@ model = AtlasNetReimpl(
     dec_batch_norm=conf['dec_batch_norm'],
     loss_scaled_isometry=conf['loss_scaled_isometry'],
     alpha_scaled_isometry=conf['alpha_scaled_isometry'],
-    alphas_sciso=conf['alphas_sciso'], gpu=gpu)
+    alphas_sciso=conf['alphas_sciso'],
+    gpu=gpu,
+    svr=svr,
+)
 
 # seed all pseudo-random generators
 neat_config.seed = pl.seed_everything(neat_config.seed, workers=True)
@@ -114,7 +118,11 @@ saver = helpers.TrainStateSaver(
     scheduler=scheduler)
 
 # Training loop.
-iters_tr = int(np.ceil(len(ds_tr) / float(conf['batch_size'])))
+if svr:
+    iters_tr = int(np.ceil(len(ds_tr) / float(conf['batch_size'])))
+    iters_tr = int(np.ceil(iters_tr / 24))
+else:
+    iters_tr = int(np.ceil(len(ds_tr) / float(conf['batch_size'])))
 iters_va = int(np.ceil(len(ds_va) / float(conf['batch_size'])))
 losses_tr = helpers.RunningLoss()
 losses_va = helpers.RunningLoss()
@@ -123,10 +131,17 @@ for ep in range(1, conf['epochs'] + 1):
     tstart = timer()
     model.train()
     for bi, batch in enumerate(dl_tr, start=1):
+        if svr and bi > iters_tr:
+            break
+
         batch = easydict.EasyDict(batch)
 
         it = (ep - 1) * iters_tr + bi
-        model(batch.input.pcl.to(device), it=it)
+        if svr:
+            input = batch.input.img.to(device)
+        else:
+            input = batch.input.pcl.to(device)
+        model(input, it=it)
         losses = model.loss(batch.target.pcl.to(device), areas_gt=batch.target.area.to(device))
 
         opt.zero_grad()
@@ -164,7 +179,11 @@ for ep in range(1, conf['epochs'] + 1):
             batch = easydict.EasyDict(batch)
 
             curr_bs = batch.input.pcl.shape[0]
-            model(batch.input.pcl.to(device))
+            if svr:
+                input = batch.input.img.to(device)
+            else:
+                input = batch.input.pcl.to(device)
+            model(input)
             lv = model.loss(batch.target.pcl.to(device), areas_gt=batch.target.area.to(device))['loss_tot']
             loss_va_run += lv.item() * curr_bs
 

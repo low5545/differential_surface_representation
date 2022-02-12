@@ -1,0 +1,62 @@
+---
+seed:                             # [H] { <int>, <empty> (randomly selected) }
+input: [ img ]                    #     { <list of inputs, apart from UV samples> }
+                                  #     currently supports { [], [ pcl ], [ pcl, nml ], [ img ] }
+target: [ area ]                  #     { <list of targets, apart from point cloud> }
+                                  #     currently supports { [ ], [ nml ], [ nml, area ] }
+
+data:
+  dataset: shapenet               #     { shapenet }
+  dataset_directory: /home/low5545/datasets/shapenet-onet/ShapeNet
+  classes: all                    #     { all, <list of object class names> (according to 
+                                  #       metadata.yaml for ShapeNet) }
+  train_dataset_ratio: 1.0        #     { <int> (number of train effective batches),
+                                  #       [0.0, 1.0] (fraction of train dataset) }
+  val_dataset_ratio: 0.04166      #     { <int> (number of validation effective batches),
+                                  #       [0.0, 1.0] (fraction of validation dataset) }
+  test_dataset_ratio: 1.0         #     { <int> (number of test effective batches),
+                                  #       [0.0, 1.0] (fraction of test dataset) }
+  overfit: false                  #     If true, validation & test datasets will be replaced
+                                  #     with train dataset (including transforms) 
+  train_dataset_perm_seed:        #     { <empty> (set to seed above), <int> }
+  eval_dataset_perm_seed: 3       #     { <empty> (no permutation), <int> }
+
+  uv_space_scale: 1.0             # [H] affects activation function of conditional homeomorphism
+  uv_sampling_dist: uniform       # [H] { uniform, poisson-disk }
+  train_uv_max_sample_size: 5000  # [H] multiple of number of charts
+  eval_uv_max_sample_size: 5000   #     multiple of number of charts
+
+  pcl_nml_replace_samples: false  # [H]
+  train_target_pcl_nml_size: 2500 # [H] multiple of number of charts
+  eval_target_pcl_nml_size: 2500  #     multiple of number of charts
+  pcl_normalization_mode: ball    # [H] { ball, cube }
+  pcl_normalization_scale: 1.0    # [H] affects activation function of conditional homeomorphism
+
+  train_eff_batch_size: 32        # [H] multiple of total number of gpus across all nodes
+  val_eff_batch_size: 32          #     multiple of total number of gpus across all nodes
+  test_eff_batch_size: 32         #     multiple of total number of gpus across all nodes
+  num_workers_per_node: 16        #     multiple of number of gpus per node
+
+  # input-dependent configs
+  input_pcl:
+    input_pcl_nml_size: 2500      # [H]
+    input_noise_std: 0.0          # [H]
+    target_noise: false           #     add the same noise as the input point cloud, or not
+    random_rotation: false        # [H]
+    random_xy_reflection: false   # [H] (ShapeNet: left-right reflection)
+    trim_lower_half: false        #     lower half along the y-axis (ShapeNetCore_v1 objects are 
+                                  #     aligned with the y-axis being the up direction & x-axis
+                                  #     being the front direction)
+  input_nml:
+    input_noise_std: 0.0          # [H] standard deviation of the random rotation angle in degrees,
+                                  #     about a random axis perpendicular to the surface normal
+    target_noise: false           #     add the same noise as the input surface normal, or not
+  input_img:
+    img_size: 224                 # [H] { 137 (original), 224 (ImageNet) }
+    target_pcl_frame: object      # [H] { object, viewpt_object }
+    brightness_jitter_factor: 0.0 # [H] [ 0.0, 1.0 ]
+    contrast_jitter_factor: 0.0   # [H] [ 0.0, 1.0 ]
+    saturation_jitter_factor: 0.0 # [H] [ 0.0, 1.0 ]
+    hue_jitter_factor: 0.0        # [H] [ 0.0, 0.5 ]
+    random_hflip: false           # [H] affects camera parameters and target point cloud
+    random_vflip: false           # [H] affects camera parameters and target point cloud
