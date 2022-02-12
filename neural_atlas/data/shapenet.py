@@ -31,7 +31,7 @@ class ShapeNetClassId(dataset_mixins.SingleModalityDataset):
 
 class ShapeNetSampleId(dataset_mixins.SingleModalityDataset):
     IMAGE_FOLDER_NAME = "img_choy2016"
-    NORMALIZED_SAMPLE_ID_CHAR_LEN = 32
+    NORMALIZED_SAMPLE_ID_CHAR_LEN = 37
 
     def __init__(self, transforms, *path_components_of_samples):
         super().__init__(transforms, *path_components_of_samples)
@@ -44,14 +44,14 @@ class ShapeNetSampleId(dataset_mixins.SingleModalityDataset):
             directory = os.path.dirname(os.path.dirname(directory))
         sample_id = os.path.basename(directory)
 
-        # normalize the 31/32-character sample id to 32 characters by padding
-        # it with a trailing space whenever necessary
+        # normalize the 31/32/37-character sample id to 37 characters by
+        # padding it with a trailing space whenever necessary
         normalized_sample_id = sample_id.ljust(
             cls.NORMALIZED_SAMPLE_ID_CHAR_LEN
         )
 
-        # convert the 32-character normalized sample id to a tensor of Unicode
-        # code point integers with shape (32)
+        # convert the 37-character normalized sample id to a tensor of Unicode
+        # code point integers with shape (37)
         normalized_sample_id_tensor = torch.as_tensor(
             list(map(ord, normalized_sample_id))
         )
