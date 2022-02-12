@@ -182,7 +182,7 @@ for ep in range(1, conf['epochs'] + 1):
         for bi, batch in enumerate(dl_va):
             batch = easydict.EasyDict(batch)
 
-            curr_bs = batch.input.pcl.shape[0]
+            curr_bs = batch.target.pcl.shape[0]
             if svr:
                 input = batch.input.img.to(device)
             else:
