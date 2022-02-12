@@ -121,7 +121,7 @@ class MultipatchDecoder(FNDiffGeomPropsBase):
         self._zero = torch.tensor(0.).to(self.device)
         self._one = torch.tensor(1.).to(self.device)
         self._mone = torch.tensor(-1.).to(self.device)
-        self._eps = torch.tensor(1e-20)
+        self._eps = torch.tensor(1e-2)
 
         if loss_scaled_isometry:
             self._alphas_si = {k: torch.tensor(float(v)).to(self.device)
