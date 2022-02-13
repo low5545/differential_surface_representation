@@ -592,7 +592,7 @@ class DataModule(pl.LightningDataModule):
             shuffle=True,
             pin_memory=True,
             drop_last=True,
-            # persistent_workers=True   # MODIFIED: not supported in PyTorch 1.6
+            persistent_workers=True
         )
         uv_sampler_dataloader = torch.utils.data.DataLoader(
             dataset=self.train_uv_sampler,
@@ -601,7 +601,7 @@ class DataModule(pl.LightningDataModule):
             shuffle=False,
             pin_memory=True,
             drop_last=False,
-            # persistent_workers=True   # MODIFIED: not supported in PyTorch 1.6
+            persistent_workers=True
         )
 
         # does not return an `easydict` due to its lack of support of
@@ -628,7 +628,7 @@ class DataModule(pl.LightningDataModule):
             shuffle=False,
             pin_memory=True,
             drop_last=False,
-            # persistent_workers=True   # MODIFIED: not supported in PyTorch 1.6
+            persistent_workers=True
         )
         uv_sampler_dataloader = torch.utils.data.DataLoader(
             dataset=self.val_uv_sampler,
@@ -637,7 +637,7 @@ class DataModule(pl.LightningDataModule):
             shuffle=False,
             pin_memory=True,
             drop_last=False,
-            # persistent_workers=True   # MODIFIED: not supported in PyTorch 1.6
+            persistent_workers=True
         )
 
         # `CombinedLoader` is required to load multiple datasets simultaneously
@@ -669,7 +669,7 @@ class DataModule(pl.LightningDataModule):
             shuffle=False,
             pin_memory=True,
             drop_last=False,
-            # persistent_workers=True   # MODIFIED: not supported in PyTorch 1.6
+            persistent_workers=True
         )
         uv_sampler_dataloader = torch.utils.data.DataLoader(
             dataset=self.test_uv_sampler,
@@ -678,7 +678,7 @@ class DataModule(pl.LightningDataModule):
             shuffle=False,
             pin_memory=True,
             drop_last=False,
-            # persistent_workers=True   # MODIFIED: not supported in PyTorch 1.6
+            persistent_workers=True
         )
 
         # `CombinedLoader` is required to load multiple datasets simultaneously
