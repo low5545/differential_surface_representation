@@ -9,6 +9,7 @@ from ..utils import dataset_mixins
 
 class ShapeNetClassId(dataset_mixins.SingleModalityDataset):
     IMAGE_FOLDER_NAME = "img_choy2016"
+    NORMALIZED_CLASS_ID_CHAR_LEN = 8
 
     def __init__(self, transforms, *path_components_of_samples):
         super().__init__(transforms, *path_components_of_samples)
@@ -23,10 +24,17 @@ class ShapeNetClassId(dataset_mixins.SingleModalityDataset):
         directory = os.path.dirname(directory)
         class_id = os.path.basename(directory)
 
+        # explicitly normalize the 8-character sample id for safety
+        normalized_class_id = class_id.ljust(
+            cls.NORMALIZED_CLASS_ID_CHAR_LEN
+        )
+
         # convert the 8-character class id to a tensor of Unicode code point
         # integers with shape (8)
-        class_id_tensor = torch.as_tensor(list(map(ord, class_id)))
-        return class_id_tensor
+        normalized_class_id_tensor = torch.as_tensor(
+            list(map(ord, normalized_class_id))
+        )
+        return normalized_class_id_tensor
 
 
 class ShapeNetSampleId(dataset_mixins.SingleModalityDataset):
