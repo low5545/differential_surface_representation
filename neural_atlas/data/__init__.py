@@ -1,1 +1,1 @@
-from . import datamodule, shapenet, samplers
+from . import cloth3d, datamodule, shapenet, samplers

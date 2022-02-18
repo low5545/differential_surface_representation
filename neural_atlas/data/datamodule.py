@@ -5,7 +5,7 @@ import torch
 import torchvision
 import pytorch_lightning as pl
 from ..utils import transforms
-from . import shapenet, samplers
+from . import cloth3d, shapenet, samplers
 
 
 class DataModule(pl.LightningDataModule):
@@ -495,6 +495,7 @@ class DataModule(pl.LightningDataModule):
 
     def _build_dataset(self, stage):
         DatasetCls = {
+            "cloth3d++": cloth3d.Cloth3d,
             "shapenet": shapenet.ShapeNet
         }[self.dataset]
 

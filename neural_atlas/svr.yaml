@@ -6,7 +6,7 @@ target: [ area ]                  #     { <list of targets, apart from point clo
                                   #     currently supports { [ ], [ nml ], [ nml, area ] }
 
 data:
-  dataset: shapenet               #     { shapenet }
+  dataset: shapenet               #     { shapenet, cloth3d++ }
   dataset_directory: /home/low5545/datasets/shapenet-onet/ShapeNet
   classes: all                    #     { all, <list of object class names> (according to 
                                   #       metadata.yaml for ShapeNet) }
